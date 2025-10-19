@@ -3,6 +3,7 @@
   const sparkler = document.querySelector('#sparkler');
   const fireworksCanvas = document.getElementById('fireworks-canvas');
   const toggleDiyaBtn = document.getElementById('toggleDiya');
+  const toggleMusicBtn = document.getElementById('toggleMusic');
   const changeColorBtn = document.getElementById('changeColorBtn');
   const shareBtn = document.getElementById('shareBtn');
   const downloadBtn = document.getElementById('downloadBtn');
@@ -11,6 +12,7 @@
   // Debug: log if buttons are found
   console.log('Buttons found:', {
     toggleDiya: !!toggleDiyaBtn,
+    toggleMusic: !!toggleMusicBtn,
     changeColor: !!changeColorBtn,
     share: !!shareBtn,
     download: !!downloadBtn
@@ -151,22 +153,77 @@
 		});
 	}
 
-	// Share wishes
-	async function shareWishes(){
+	// Share wishes with multiple platform options
+	function shareWishes(){
 		const text = 'Happy Diwali 2025! 🪔✨ Wishing you joy, prosperity, and sparkling new beginnings.';
-		const url = location.href;
-		if (navigator.share){
-			try{ await navigator.share({title:'Happy Diwali 2025', text, url}); }catch(e){ /* user cancelled */ }
-		} else {
-			try{
-				await navigator.clipboard.writeText(`${text}\n${url}`);
-				shareBtn.textContent = '✅ Copied!';
-				setTimeout(()=> shareBtn.textContent = '💌 Share Wishes', 1400);
-			}catch(e){
-				alert('Copied wishes: ' + text);
+		const url = encodeURIComponent(location.href);
+		const encodedText = encodeURIComponent(text);
+		
+		// Create share modal
+		const modal = document.createElement('div');
+		modal.className = 'share-modal';
+		modal.innerHTML = `
+			<div class="share-content">
+				<h3>Share Diwali Wishes 🪔</h3>
+				<div class="share-options">
+					<a href="https://wa.me/?text=${encodedText}%20${url}" target="_blank" class="share-btn whatsapp">
+						<span class="icon">📱</span> WhatsApp
+					</a>
+					<a href="mailto:?subject=Happy Diwali 2025&body=${encodedText}%0A%0A${url}" class="share-btn email">
+						<span class="icon">📧</span> Email
+					</a>
+					<a href="https://www.linkedin.com/sharing/share-offsite/?url=${url}" target="_blank" class="share-btn linkedin">
+						<span class="icon">💼</span> LinkedIn
+					</a>
+					<a href="https://twitter.com/intent/tweet?text=${encodedText}&url=${url}" target="_blank" class="share-btn twitter">
+						<span class="icon">🐦</span> Twitter
+					</a>
+					<a href="https://www.facebook.com/sharer/sharer.php?u=${url}" target="_blank" class="share-btn facebook">
+						<span class="icon">👥</span> Facebook
+					</a>
+					<button class="share-btn copy" id="copyLinkBtn">
+						<span class="icon">📋</span> Copy Link
+					</button>
+				</div>
+				<button class="close-modal">✕ Close</button>
+			</div>
+		`;
+		
+		document.body.appendChild(modal);
+		
+		// Fade in animation
+		setTimeout(() => modal.classList.add('show'), 10);
+		
+		// Close modal
+		const closeBtn = modal.querySelector('.close-modal');
+		closeBtn.addEventListener('click', () => {
+			modal.classList.remove('show');
+			setTimeout(() => modal.remove(), 300);
+		});
+		
+		// Close on outside click
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) {
+				modal.classList.remove('show');
+				setTimeout(() => modal.remove(), 300);
 			}
-		}
+		});
+		
+		// Copy link functionality
+		const copyBtn = modal.querySelector('#copyLinkBtn');
+		copyBtn.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(`${text}\n${location.href}`);
+				copyBtn.innerHTML = '<span class="icon">✅</span> Copied!';
+				setTimeout(() => {
+					copyBtn.innerHTML = '<span class="icon">�</span> Copy Link';
+				}, 2000);
+			} catch (e) {
+				alert('Link copied: ' + location.href);
+			}
+		});
 	}
+	
   shareBtn?.addEventListener('click', (e)=>{
     console.log('Share button clicked!');
     e.stopPropagation();
@@ -226,46 +283,148 @@
     console.log('Download button clicked!');
     e.stopPropagation();
     downloadGreeting();
-  });		// Subtle audio crackle when diya is on (no external assets)
-		let audioCtx = null, noiseSrc = null, noiseGain = null, noiseFilter = null;
-		function startCrackle(){
-			try{
-				if (prefersReduced) return; // respect reduced motion as a proxy for sensory effects
-				if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-				if (audioCtx) return; // already playing
-				const Ctx = window.AudioContext || window.webkitAudioContext;
-				if (!Ctx) return;
-				audioCtx = new Ctx();
-				const sr = audioCtx.sampleRate;
-				const buffer = audioCtx.createBuffer(1, sr * 1.0, sr); // 1 second noise
-				const data = buffer.getChannelData(0);
-				for (let i=0;i<data.length;i++){
-					// random short crackles: sparse impulses
-					const r = Math.random();
-					data[i] = (r > 0.995 ? (Math.random()*2-1) * 0.9 : (Math.random()*2-1) * 0.02);
-				}
-				noiseSrc = audioCtx.createBufferSource();
-				noiseSrc.buffer = buffer;
-				noiseSrc.loop = true;
-				noiseFilter = audioCtx.createBiquadFilter();
-				noiseFilter.type = 'highpass';
-				noiseFilter.frequency.value = 800;
-				noiseGain = audioCtx.createGain();
-				noiseGain.gain.value = 0.06; // subtle
-				noiseSrc.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
-				noiseSrc.start();
-			}catch(e){ /* ignore audio errors */ }
-		}
-		function stopCrackle(){
-			try{
-				if (noiseSrc){ try{ noiseSrc.stop(); }catch(_){} }
-				noiseSrc = null;
-				if (audioCtx){
-					// close to release resources (some browsers disallow close)
-					if (audioCtx.close){ audioCtx.close().catch(()=>{}); }
-				}
-			} finally {
-				audioCtx = null; noiseGain = null; noiseFilter = null;
+  });	// Festive background music using Web Audio API
+	let musicCtx = null, musicOscillators = [], musicGain = null, musicPlaying = false;
+	
+	function startMusic(){
+		try{
+			if (prefersReduced) return;
+			if (musicPlaying) return;
+			
+			const Ctx = window.AudioContext || window.webkitAudioContext;
+			if (!Ctx) return;
+			
+			musicCtx = new Ctx();
+			if (musicCtx.state === 'suspended') musicCtx.resume();
+			
+			// Create a festive melody pattern (Indian classical inspired notes)
+			// Using Sa Re Ga Ma Pa Dha Ni (C D E F G A B scale)
+			const melody = [
+				{freq: 523.25, duration: 0.4}, // C5 (Sa)
+				{freq: 587.33, duration: 0.4}, // D5 (Re)
+				{freq: 659.25, duration: 0.3}, // E5 (Ga)
+				{freq: 698.46, duration: 0.5}, // F5 (Ma)
+				{freq: 783.99, duration: 0.4}, // G5 (Pa)
+				{freq: 698.46, duration: 0.3}, // F5 (Ma)
+				{freq: 659.25, duration: 0.4}, // E5 (Ga)
+				{freq: 587.33, duration: 0.5}, // D5 (Re)
+			];
+			
+			musicGain = musicCtx.createGain();
+			musicGain.gain.value = 0.15; // gentle volume
+			musicGain.connect(musicCtx.destination);
+			
+			let currentTime = musicCtx.currentTime;
+			
+			function playMelodyLoop(){
+				if (!musicPlaying) return;
+				
+				melody.forEach((note, idx) => {
+					const osc = musicCtx.createOscillator();
+					osc.type = 'sine'; // smooth tone
+					osc.frequency.value = note.freq;
+					
+					const noteGain = musicCtx.createGain();
+					noteGain.gain.setValueAtTime(0, currentTime);
+					noteGain.gain.linearRampToValueAtTime(0.3, currentTime + 0.05);
+					noteGain.gain.linearRampToValueAtTime(0, currentTime + note.duration);
+					
+					osc.connect(noteGain);
+					noteGain.connect(musicGain);
+					
+					osc.start(currentTime);
+					osc.stop(currentTime + note.duration);
+					
+					currentTime += note.duration;
+				});
+				
+				// Add pause between loops
+				currentTime += 0.8;
+				
+				// Schedule next loop
+				const loopDuration = melody.reduce((sum, n) => sum + n.duration, 0) + 0.8;
+				setTimeout(playMelodyLoop, loopDuration * 1000);
 			}
+			
+			musicPlaying = true;
+			playMelodyLoop();
+			
+		}catch(e){ 
+			console.log('Music error:', e);
 		}
+	}
+	
+	function stopMusic(){
+		try{
+			musicPlaying = false;
+			if (musicCtx){
+				if (musicCtx.close){ 
+					musicCtx.close().catch(()=>{}); 
+				}
+			}
+		} finally {
+			musicCtx = null; 
+			musicGain = null;
+			musicOscillators = [];
+		}
+	}
+	
+	// Music toggle button
+	toggleMusicBtn?.addEventListener('click', (e)=>{
+		console.log('Music button clicked!');
+		e.stopPropagation();
+		const playing = !musicPlaying;
+		if (playing) {
+			startMusic();
+			toggleMusicBtn.textContent = '🎵 Stop Music';
+			toggleMusicBtn.setAttribute('aria-pressed', 'true');
+		} else {
+			stopMusic();
+			toggleMusicBtn.textContent = '🎵 Play Music';
+			toggleMusicBtn.setAttribute('aria-pressed', 'false');
+		}
+	});
+
+	// Subtle audio crackle when diya is on (no external assets)
+	let audioCtx = null, noiseSrc = null, noiseGain = null, noiseFilter = null;
+	function startCrackle(){
+		try{
+			if (prefersReduced) return; // respect reduced motion as a proxy for sensory effects
+			if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+			if (audioCtx) return; // already playing
+			const Ctx = window.AudioContext || window.webkitAudioContext;
+			if (!Ctx) return;
+			audioCtx = new Ctx();
+			const sr = audioCtx.sampleRate;
+			const buffer = audioCtx.createBuffer(1, sr * 1.0, sr); // 1 second noise
+			const data = buffer.getChannelData(0);
+			for (let i=0;i<data.length;i++){
+				// random short crackles: sparse impulses
+				const r = Math.random();
+				data[i] = (r > 0.995 ? (Math.random()*2-1) * 0.9 : (Math.random()*2-1) * 0.02);
+			}
+			noiseSrc = audioCtx.createBufferSource();
+			noiseSrc.buffer = buffer;
+			noiseSrc.loop = true;
+			noiseFilter = audioCtx.createBiquadFilter();
+			noiseFilter.type = 'highpass';
+			noiseFilter.frequency.value = 800;
+			noiseGain = audioCtx.createGain();
+			noiseGain.gain.value = 0.06; // subtle
+			noiseSrc.connect(noiseFilter).connect(noiseGain).connect(audioCtx.destination);
+			noiseSrc.start();
+		}catch(e){ /* ignore audio errors */ }
+	}
+	function stopCrackle(){
+		try{
+			if (noiseSrc){ try{ noiseSrc.stop(); }catch(_){} }
+			noiseSrc = null;
+			if (audioCtx){
+				// close to release resources (some browsers disallow close)
+				if (audioCtx.close){ audioCtx.close().catch(()=>{}); }
+			}
+		} finally {
+			audioCtx = null; noiseGain = null; noiseFilter = null;
+		}
+	}
 })();

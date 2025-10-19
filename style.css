@@ -39,25 +39,46 @@ body:after{ filter: blur(0.5px); opacity: .6; }
 .hero{
 	position: fixed;
 	inset: 0;
-	display: grid;
-	place-content: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 	text-align: center;
-	padding: 2rem;
+	padding: 2rem 1rem;
 	gap: 1.25rem;
 	pointer-events: auto;
 	z-index: 3;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 .hero h1{
-	font-size: clamp(2.2rem, 5vw + 1rem, 4rem);
+	font-size: clamp(1.8rem, 5vw + 1rem, 4rem);
 	margin: 0;
 	letter-spacing: 1px;
 	text-shadow: 0 0 12px rgba(255, 209, 102, 0.5), 0 0 32px rgba(255, 136, 0, 0.35);
+	line-height: 1.2;
 }
 .hero .year{ color: var(--accent); filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.85)); }
-.hero .sub{ opacity:.9; margin: 0 0 .25rem; font-size: clamp(1rem, 1.2vw + .5rem, 1.25rem); }
-.hero .actions{ display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap; pointer-events:auto; }
-.hero .hint{ opacity:.8; font-size:.95rem; margin-top:.25rem }
+.hero .sub{ opacity:.9; margin: 0 0 .25rem; font-size: clamp(0.85rem, 1.2vw + .5rem, 1.25rem); line-height: 1.4; max-width: 90%; }
+.hero .actions{ display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap; pointer-events:auto; width: 100%; max-width: 600px; }
+.hero .hint{ opacity:.8; font-size:.95rem; margin-top:.25rem; max-width: 90%; line-height: 1.4; }
 .noscript{ position: fixed; bottom: .5rem; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.5); padding:.5rem .75rem; border-radius:.5rem }
+
+/* Signature in right corner */
+.signature{
+	position: fixed;
+	bottom: 1.5rem;
+	right: 1.5rem;
+	font-size: 0.9rem;
+	color: rgba(255, 255, 255, 0.75);
+	font-style: italic;
+	text-align: right;
+	line-height: 1.4;
+	z-index: 10;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+	pointer-events: none;
+	font-family: 'Segoe UI', 'Georgia', serif;
+}
 
 /* Buttons */
 .btn{
@@ -153,14 +174,382 @@ body:after{ filter: blur(0.5px); opacity: .6; }
 	pointer-events: none;
 }
 
+/* Share Modal */
+.share-modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.75);
+	backdrop-filter: blur(8px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	padding: 1rem;
+}
+.share-modal.show { opacity: 1; }
+
+.share-content {
+	background: linear-gradient(135deg, rgba(18, 10, 42, 0.95), rgba(26, 15, 59, 0.95));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 1rem;
+	padding: 1.5rem;
+	max-width: 500px;
+	width: 100%;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+	transform: scale(0.9);
+	transition: transform 0.3s ease;
+}
+.share-modal.show .share-content { transform: scale(1); }
+
+.share-content h3 {
+	margin: 0 0 1.25rem;
+	color: var(--accent);
+	font-size: 1.5rem;
+	text-align: center;
+	text-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
+}
+
+.share-options {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 0.75rem;
+	margin-bottom: 1.25rem;
+}
+
+.share-btn {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	color: var(--text);
+	padding: 0.75rem;
+	border-radius: 0.6rem;
+	cursor: pointer;
+	backdrop-filter: blur(6px);
+	transition: all 0.2s ease;
+	text-decoration: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	font-size: 0.95rem;
+	font-family: inherit;
+}
+
+.share-btn:hover {
+	transform: translateY(-2px);
+	background: rgba(255, 255, 255, 0.14);
+	box-shadow: 0 4px 16px rgba(255, 209, 102, 0.2);
+}
+
+.share-btn .icon { font-size: 1.2rem; }
+
+.share-btn.whatsapp:hover { border-color: #25D366; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3); }
+.share-btn.email:hover { border-color: #EA4335; box-shadow: 0 4px 16px rgba(234, 67, 53, 0.3); }
+.share-btn.linkedin:hover { border-color: #0A66C2; box-shadow: 0 4px 16px rgba(10, 102, 194, 0.3); }
+.share-btn.twitter:hover { border-color: #1DA1F2; box-shadow: 0 4px 16px rgba(29, 161, 242, 0.3); }
+.share-btn.facebook:hover { border-color: #1877F2; box-shadow: 0 4px 16px rgba(24, 119, 242, 0.3); }
+.share-btn.copy:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(255, 209, 102, 0.3); }
+
+.close-modal {
+	width: 100%;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: var(--text);
+	padding: 0.7rem;
+	border-radius: 0.6rem;
+	cursor: pointer;
+	font-size: 1rem;
+	transition: all 0.2s ease;
+	font-family: inherit;
+}
+.close-modal:hover {
+	background: rgba(255, 255, 255, 0.15);
+	transform: scale(1.02);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce){
 	#fireworks-canvas{ display:none; }
 	.particle{ transition: none; }
+	.share-modal, .share-content { transition: none; }
 }
 
-/* Small screens */
+/* Tablet screens */
+@media (max-width: 768px){
+	.hero { padding: 1.5rem 1rem; gap: 1rem; }
+	.hero h1 { font-size: clamp(1.8rem, 7vw, 2.5rem); }
+	.hero .sub { font-size: 0.95rem; max-width: 95%; }
+	.hero .actions { gap: 0.5rem; max-width: 500px; }
+	.btn { padding: 0.55rem 0.75rem; font-size: 0.9rem; }
+	.hero .hint { font-size: 0.88rem; max-width: 95%; }
+	.share-options { grid-template-columns: repeat(2, 1fr); }
+	#diya { bottom: 15px; }
+}
+
+/* Small screens (most phones) */
 @media (max-width: 480px){
-	#diya{ width: 96px; height: 52px; }
-	#diya:before{ bottom: 38px; height: 36px; width: 20px; }
+	body { overflow: hidden; }
+	
+	.signature {
+		bottom: 1rem;
+		right: 1rem;
+		font-size: 0.7rem;
+	}
+	
+	.hero { 
+		padding: 0.75rem 0.75rem 5rem; 
+		gap: 0.8rem; 
+		justify-content: flex-start;
+		padding-top: max(0.75rem, env(safe-area-inset-top));
+	}
+	
+	.hero h1 { 
+		font-size: clamp(1.6rem, 9vw, 2.2rem); 
+		letter-spacing: 0.5px; 
+		margin-top: 0.5rem;
+	}
+	
+	.hero .sub { 
+		font-size: clamp(0.8rem, 3.5vw, 0.95rem); 
+		max-width: 95%;
+		padding: 0 0.5rem;
+	}
+	
+	.hero .actions { 
+		flex-direction: column; 
+		width: 100%; 
+		max-width: 90%;
+		gap: 0.5rem;
+		margin: 0;
+	}
+	
+	.btn { 
+		width: 100%; 
+		padding: 0.7rem 0.5rem; 
+		font-size: 0.9rem;
+		white-space: nowrap;
+	}
+	
+	.hero .hint { 
+		font-size: 0.78rem; 
+		padding: 0 1rem; 
+		max-width: 95%;
+		line-height: 1.3;
+	}
+	
+	#diya { 
+		width: 90px; 
+		height: 50px; 
+		bottom: 12px; 
+	}
+	#diya:before { 
+		bottom: 36px; 
+		height: 34px; 
+		width: 19px; 
+	}
+	
+	.share-content { 
+		padding: 1.25rem 1rem; 
+		margin: 0.5rem;
+	}
+	.share-content h3 { 
+		font-size: 1.2rem; 
+		margin-bottom: 1rem;
+	}
+	.share-options { 
+		grid-template-columns: 1fr;
+		gap: 0.6rem;
+	}
+	.share-btn { 
+		padding: 0.85rem; 
+		font-size: 0.95rem; 
+	}
+	
+	#sparkler:before { height: 18vh; }
+	#sparkler:after { height: 18vh; top: calc(18vh - 1px); }
+}
+
+/* Extra small screens (iPhone SE, small Androids) */
+@media (max-width: 380px){
+	.signature {
+		bottom: 0.75rem;
+		right: 0.75rem;
+		font-size: 0.65rem;
+	}
+	
+	.hero { 
+		padding: 0.5rem 0.5rem 4.5rem; 
+		gap: 0.6rem; 
+	}
+	
+	.hero h1 { 
+		font-size: clamp(1.4rem, 8vw, 1.8rem); 
+		margin-top: 0.25rem;
+	}
+	
+	.hero .sub { 
+		font-size: 0.75rem; 
+		padding: 0 0.25rem;
+	}
+	
+	.hero .actions { 
+		max-width: 95%; 
+		gap: 0.45rem;
+	}
+	
+	.btn { 
+		padding: 0.65rem 0.4rem; 
+		font-size: 0.85rem; 
+	}
+	
+	.hero .hint { 
+		font-size: 0.72rem; 
+		padding: 0 0.5rem; 
+	}
+	
+	#diya { 
+		width: 75px; 
+		height: 45px; 
+		bottom: 10px;
+	}
+	#diya:before { 
+		bottom: 32px; 
+		height: 30px; 
+		width: 17px; 
+	}
+	
+	.share-content { 
+		padding: 1rem 0.75rem; 
+	}
+	.share-content h3 { 
+		font-size: 1.1rem; 
+	}
+	.share-btn { 
+		padding: 0.75rem; 
+		font-size: 0.9rem; 
+	}
+}
+
+/* Very small screens (Galaxy Fold, etc) */
+@media (max-width: 320px){
+	.hero { 
+		padding: 0.4rem 0.4rem 4rem; 
+		gap: 0.5rem; 
+	}
+	
+	.hero h1 { 
+		font-size: 1.3rem; 
+	}
+	
+	.hero .sub { 
+		font-size: 0.7rem; 
+	}
+	
+	.hero .actions { 
+		gap: 0.4rem; 
+	}
+	
+	.btn { 
+		padding: 0.6rem 0.3rem; 
+		font-size: 0.8rem; 
+	}
+	
+	.hero .hint { 
+		font-size: 0.68rem; 
+	}
+	
+	#diya { 
+		width: 65px; 
+		height: 40px; 
+	}
+	#diya:before { 
+		bottom: 28px; 
+		height: 26px; 
+		width: 15px; 
+	}
+}
+
+/* Landscape mobile (horizontal orientation) */
+@media (max-height: 500px) and (orientation: landscape){
+	.signature {
+		bottom: 0.75rem;
+		right: 1rem;
+		font-size: 0.7rem;
+	}
+	
+	.hero { 
+		padding: 0.5rem 1rem 3.5rem; 
+		gap: 0.4rem; 
+		overflow-y: auto;
+	}
+	
+	.hero h1 { 
+		font-size: 1.5rem; 
+		margin-top: 0;
+	}
+	
+	.hero .sub { 
+		font-size: 0.75rem; 
+		margin: 0; 
+	}
+	
+	.hero .actions { 
+		gap: 0.35rem; 
+		flex-direction: row;
+		flex-wrap: wrap;
+		max-width: 100%;
+	}
+	
+	.btn { 
+		padding: 0.4rem 0.6rem; 
+		font-size: 0.8rem; 
+		flex: 1 1 auto;
+		min-width: 120px;
+	}
+	
+	.hero .hint { 
+		font-size: 0.7rem; 
+		margin-top: 0; 
+	}
+	
+	#diya { 
+		bottom: 8px; 
+		width: 70px; 
+		height: 40px; 
+	}
+	#diya:before { 
+		bottom: 28px; 
+		height: 26px; 
+	}
+	
+	.share-modal { padding: 0.5rem; }
+	.share-content { 
+		padding: 0.75rem; 
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+	.share-content h3 { 
+		font-size: 1rem; 
+		margin-bottom: 0.5rem;
+	}
+	.share-options { 
+		grid-template-columns: repeat(3, 1fr); 
+		gap: 0.4rem;
+	}
+	.share-btn { 
+		padding: 0.5rem; 
+		font-size: 0.8rem; 
+	}
+}
+
+/* Extra short landscape screens */
+@media (max-height: 400px) and (orientation: landscape){
+	.hero { padding: 0.3rem 1rem 3rem; }
+	.hero h1 { font-size: 1.3rem; }
+	.hero .sub { font-size: 0.7rem; }
+	.btn { padding: 0.35rem 0.5rem; font-size: 0.75rem; }
+	.hero .hint { font-size: 0.65rem; }
+	#diya { width: 60px; height: 35px; bottom: 5px; }
+	#diya:before { bottom: 25px; height: 22px; width: 14px; }
 }
